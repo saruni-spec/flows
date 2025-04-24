@@ -206,4 +206,10 @@ router.post("/", async (req, res) => {
   }
 });
 
+//
+// // Handle GET requests for testing,return simple text
+router.get("/", (req, res) => {
+  res.send("Flow endpoint is working!");
+});
+
 module.exports = router;
