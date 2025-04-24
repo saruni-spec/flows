@@ -43,3 +43,7 @@ next-env.d.ts
 
 # Open Next
 .open-next
+
+.key*
+/key*
+./key*
