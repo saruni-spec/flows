@@ -12,8 +12,24 @@ const {
   getNextScreen,
 } = require("./lib");
 // Read private key from file
+const privateKeyEnv = process.env.PRIVATE_KEY;
+let PRIVATE_KEY;
 
-const PRIVATE_KEY = fs.readFileSync(process.env.PRIVATE_KEY, "utf8");
+// Handle different possible formats
+if (privateKeyEnv.includes("-----BEGIN PRIVATE KEY-----")) {
+  // If headers are already present, just ensure newlines are correct
+  PRIVATE_KEY = privateKeyEnv.replace(/\\n/g, "\n");
+} else {
+  // If headers are missing or format is incorrect, format it properly
+  const keyContent = privateKeyEnv.replace(/[\r\n\s]/g, "");
+
+  // Build properly formatted key
+  PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\n";
+  for (let i = 0; i < keyContent.length; i += 64) {
+    PRIVATE_KEY += keyContent.slice(i, i + 64) + "\n";
+  }
+  PRIVATE_KEY += "-----END PRIVATE KEY-----\n";
+}
 
 const APP_SECRET = process.env.APP_SECRET;
 
