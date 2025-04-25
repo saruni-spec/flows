@@ -224,7 +224,7 @@ const SCREEN_RESPONSES = {
   LOAN_AMOUNT_INPUT_SCREEN: {
     screen: "LOAN_AMOUNT_INPUT_SCREEN",
     data: {
-      max_loan_amount: 25000, // Would come from your backend
+      max_loan_amount: `${25000}`, // Would come from your backend
       error_message:
         "Invalid amount. Please enter a value between 500 and ${max_loan_amount}.",
     },
@@ -232,10 +232,10 @@ const SCREEN_RESPONSES = {
   LOAN_TERMS_CONFIRMATION_SCREEN: {
     screen: "LOAN_TERMS_CONFIRMATION_SCREEN",
     data: {
-      borrowed_amount: 5000, // Would come from previous step
-      repayment_amount: 5250, // Calculated
+      borrowed_amount: `${5000}`, // Would come from previous step
+      repayment_amount: `${5250}`, // Calculated
       due_date: "2025-05-18", // Calculated
-      interest_amount: 250, // Calculated
+      interest_amount: `${250}`, // Calculated
       error_message: "Please confirm the loan terms to proceed.",
     },
   },
@@ -249,9 +249,9 @@ const SCREEN_RESPONSES = {
   CHECK_LOAN_STATUS_SCREEN: {
     screen: "CHECK_LOAN_STATUS_SCREEN",
     data: {
-      borrowed_amount: 5000, // From your backend
-      repaid_amount: 1000, // From your backend
-      remaining_amount: 4250, // Calculated
+      borrowed_amount: `${5000}`, // From your backend
+      repaid_amount: `${1000}`, // From your backend
+      remaining_amount: `${4250}`, // Calculated
       // Could include next payment date etc.
       next_payment_date: "2025-06-15",
     },
@@ -260,11 +260,11 @@ const SCREEN_RESPONSES = {
     screen: "VIEW_REPAYMENT_SCHEDULE_SCREEN",
     data: {
       due_date: "2025-05-18", // From your backend
-      repayment_amount: 5250, // From your backend
+      repayment_amount: `${5250}`, // From your backend
       // Could include full schedule if needed
       full_schedule: [
-        { due_date: "2025-05-18", amount: 5250 },
-        { due_date: "2025-06-18", amount: 5250 },
+        { due_date: "2025-05-18", amount: `${5250}` },
+        { due_date: "2025-06-18", amount: `${5250}` },
       ],
     },
   },
@@ -392,7 +392,7 @@ async function getNextScreen(decryptedBody) {
               return {
                 screen: "IDENTITY_VERIFICATION_SCREEN",
                 data: {
-                  employee_name: "Failed",
+                  error_message: "National ID not found.",
                 },
               };
             }
@@ -400,7 +400,9 @@ async function getNextScreen(decryptedBody) {
             return {
               screen: "IDENTITY_VERIFICATION_SCREEN",
               data: {
-                employee_name: "Failed invalid",
+                error_message:
+                  "Invalid National ID format. Please enter 8 digits.",
+                national_id_hint: "Format: 12345678",
               },
             };
           }
@@ -409,7 +411,9 @@ async function getNextScreen(decryptedBody) {
           return {
             screen: "IDENTITY_VERIFICATION_SCREEN",
             data: {
-              employee_name: "Failed invalid form",
+              error_message:
+                "Invalid National ID format. Please enter 8 digits.",
+              national_id_hint: "Format: 12345678",
             },
           };
         }
@@ -419,7 +423,7 @@ async function getNextScreen(decryptedBody) {
           const pin = data.pin;
           console.log(`Received PIN: ${pin}`);
 
-          const pinIsValid = pin === "1234"; // Simulate PIN validation
+          const pinIsValid = pin === "1234";
 
           if (pinIsValid) {
             return {
@@ -432,6 +436,7 @@ async function getNextScreen(decryptedBody) {
               screen: "PIN_VERIFICATION_SCREEN",
               data: {
                 error_message: "Invalid PIN. Please try again.",
+                employee_name: "Test Employee",
               },
             };
           }
@@ -455,15 +460,15 @@ async function getNextScreen(decryptedBody) {
             case 1:
               return {
                 screen: "LOAN_AMOUNT_INPUT_SCREEN",
-                data: { max_loan_amount: 25000 },
+                data: { max_loan_amount: `${25000}` },
               };
             case 2:
               return {
                 screen: "CHECK_LOAN_STATUS_SCREEN",
                 data: {
-                  borrowed_amount: 6000,
-                  repaid_amount: 3000,
-                  remaining_amount: 3150,
+                  borrowed_amount: `${6000}`,
+                  repaid_amount: `${3000}`,
+                  remaining_amount: `${3150}`,
                 },
               };
             case 3:
@@ -471,7 +476,7 @@ async function getNextScreen(decryptedBody) {
                 screen: "VIEW_REPAYMENT_SCHEDULE_SCREEN",
                 data: {
                   due_date: "2025-06-15",
-                  repayment_amount: 3150,
+                  repayment_amount: `${3150}`,
                 },
               };
             case 4:
@@ -570,43 +575,46 @@ async function getNextScreen(decryptedBody) {
         }
 
       case "LOAN_PROCESSING_SUBMITTED_SCREEN":
+        // Go to the loan status screen after submission
+        console.log("Loan processing submitted. Redirecting to status screen.");
+        return {
+          screen: "CHECK_LOAN_STATUS_SCREEN",
+          data: {
+            borrowed_amount: `${5000}`,
+            repaid_amount: `${1000}`,
+            remaining_amount: `${4250}`, // Calculated
+            next_payment_date: "2025-06-15",
+          },
+        };
+
       case "CHECK_LOAN_STATUS_SCREEN":
+        // Return to main menu screen
+        console.log("User checked loan status. Redirecting to main menu.");
+        return {
+          screen: "MAIN_MENU_SCREEN",
+          data: {
+            error_message: "Invalid selection. Please enter 1, 2, 3, or 4.",
+          },
+        };
       case "VIEW_REPAYMENT_SCHEDULE_SCREEN":
-      case "FAQ_SCREEN":
-        // Terminal screens
-        console.log(`User action on terminal screen: ${screen}`);
-        console.log("Terminal screen payload:", data);
-
-        // Handle specific actions for terminal screens
-        if (screen === "VIEW_REPAYMENT_SCHEDULE_SCREEN") {
-          if (data?.action === "request_schedule_text") {
-            console.log(
-              "User requested schedule as text. Triggering text message."
-            );
-          } else if (data?.action === "request_schedule_pdf") {
-            console.log(
-              "User requested schedule as PDF. Triggering PDF generation."
-            );
-          } else if (data?.action === "schedule_screen_acknowledged") {
-            console.log("User acknowledged schedule screen.");
-          }
-        } else if (
-          screen === "LOAN_PROCESSING_SUBMITTED_SCREEN" &&
-          data?.action === "acknowledge_submission_viewed"
-        ) {
-          console.log("User acknowledged submission screen.");
-        } else if (
-          screen === "CHECK_LOAN_STATUS_SCREEN" &&
-          data?.action === "status_screen_acknowledged"
-        ) {
-          console.log("User acknowledged status screen.");
-        } else if (
-          screen === "FAQ_SCREEN" &&
-          data?.action === "faq_screen_acknowledged"
-        ) {
-          console.log("User acknowledged FAQ screen.");
+        if (data?.action === "request_schedule_text") {
+          console.log(
+            "User requested schedule as text. Triggering text message."
+          );
+        } else if (data?.action === "request_schedule_pdf") {
+          console.log(
+            "User requested schedule as PDF. Triggering PDF generation."
+          );
+        } else if (data?.action === "schedule_screen_acknowledged") {
+          console.log("User acknowledged repayment schedule screen.");
+          // Return to main menu
+          return {
+            screen: "MAIN_MENU_SCREEN",
+            data: {},
+          };
         }
-
+      case "FAQ_SCREEN":
+        console.log("User acknowledged FAQ screen.");
         // Return minimal response for terminal screens
         return {
           data: {
