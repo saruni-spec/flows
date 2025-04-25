@@ -559,23 +559,13 @@ async function getNextScreen(decryptedBody) {
         }
 
       case "LOAN_TERMS_CONFIRMATION_SCREEN":
-        if (data?.action === "confirm_loan_terms") {
-          console.log("Loan terms confirmed.");
-          const loanReference = `LN${Math.floor(Math.random() * 1000000)}`;
+        console.log("Loan terms confirmed.");
+        const loanReference = `LN${Math.floor(Math.random() * 1000000)}`;
 
-          return {
-            screen: "LOAN_PROCESSING_SUBMITTED_SCREEN",
-            data: { loan_reference: loanReference },
-          };
-        } else {
-          console.warn(`Unexpected payload or action:`, data);
-          return {
-            screen: screen,
-            data: {
-              error_message: "Please confirm the loan terms to proceed.",
-            },
-          };
-        }
+        return {
+          screen: "LOAN_PROCESSING_SUBMITTED_SCREEN",
+          data: { loan_reference: loanReference },
+        };
 
       case "LOAN_PROCESSING_SUBMITTED_SCREEN":
         // Go to the loan status screen after submission
