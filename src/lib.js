@@ -528,18 +528,21 @@ async function getNextScreen(decryptedBody) {
             return {
               screen: "LOAN_TERMS_CONFIRMATION_SCREEN",
               data: {
-                borrowed_amount: requestedAmount,
-                repayment_amount: repaymentAmount,
-                due_date: formattedDueDate,
-                interest_amount: requestedAmount * interestRate,
+                borrowed_amount: `${requestedAmount}`,
+                repayment_amount: `${repaymentAmount}`,
+                due_date: `${formattedDueDate}`,
+                interest_amount: `${requestedAmount * interestRate}`,
               },
             };
           } else {
-            console.warn("Invalid loan amount requested:", requestedAmount);
+            console.warn(
+              "Invalid loan amount requested:",
+              `${requestedAmount}`
+            );
             return {
               screen: "LOAN_AMOUNT_INPUT_SCREEN",
               data: {
-                max_loan_amount: maxLoan,
+                max_loan_amount: `${maxLoan}`,
                 error_message: `Invalid amount. Please enter a value between 1 and ${maxLoan}.`,
               },
             };
@@ -549,7 +552,7 @@ async function getNextScreen(decryptedBody) {
           return {
             screen: screen,
             data: {
-              max_loan_amount: 25000,
+              max_loan_amount: `${25000}`,
               error_message: "Please enter a valid amount.",
             },
           };
