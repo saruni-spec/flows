@@ -1,10 +1,4 @@
-// app/api/whatsapp-flow/route.js
 const crypto = require("crypto");
-
-// const META_PUBLIC_KEY = process.env.META_PUBLIC_KEY; // Not needed for encrypting responses in this flow scheme
-
-// --- Crypto Utility Functions based on Meta's examples ---
-
 /**
  * Decrypts the incoming WhatsApp Flow request body.
  * @param {object} body The part of the request body containing the encrypted fields (encrypted_aes_key, encrypted_flow_data, initial_vector).
@@ -20,7 +14,7 @@ const decryptFlowRequest = (body, privatePem, passphrase) => {
     console.error(
       "Missing required encrypted fields in request body for decryption."
     );
-    // Throw a FlowEndpointException with 400 status for bad format
+
     throw new FlowEndpointException(
       400,
       "Invalid encrypted flow data format: missing fields."
@@ -32,13 +26,12 @@ const decryptFlowRequest = (body, privatePem, passphrase) => {
     privateKey = crypto.createPrivateKey({ key: privatePem, passphrase });
   } catch (error) {
     console.error("Failed to load private key:", error);
-    // This indicates a server configuration issue, not a client data issue
-    throw new Error("Server private key configuration error."); // Throw regular Error for 500 status
+
+    throw new Error("Server private key configuration error.");
   }
 
   let decryptedAesKey = null;
   try {
-    // decrypt AES key created by client using your private RSA key
     decryptedAesKey = crypto.privateDecrypt(
       {
         key: privateKey,
@@ -49,27 +42,24 @@ const decryptFlowRequest = (body, privatePem, passphrase) => {
     );
   } catch (error) {
     console.error("Failed to decrypt AES key:", error);
-    /*
-        Failed to decrypt AES key. This likely means the public key uploaded to Meta is incorrect,
-        or the private key used here doesn't match.
-        Return HTTP status code 421 to refresh the public key on the client (WhatsApp app).
-        */
+
+    //Failed to decrypt AES key. This likely means the public key uploaded to Meta is incorrect,
+    //  or the private key used here doesn't match.
     throw new FlowEndpointException(
       421,
       "Failed to decrypt the request (AES key). Please verify your private key configuration."
     );
   }
 
-  // decrypt flow data using the decrypted AES key and IV
   const flowDataBuffer = Buffer.from(encrypted_flow_data, "base64");
   const initialVectorBuffer = Buffer.from(initial_vector, "base64");
 
-  const TAG_LENGTH = 16; // GCM auth tag length is 16 bytes
-  // Ensure the buffer is long enough to contain data and tag
+  const TAG_LENGTH = 16;
+
   if (flowDataBuffer.length < TAG_LENGTH) {
     console.error("Encrypted flow data too short to contain auth tag.");
     throw new FlowEndpointException(
-      400, // Bad Request
+      400,
       "Invalid encrypted flow data format: too short."
     );
   }
@@ -79,15 +69,15 @@ const decryptFlowRequest = (body, privatePem, passphrase) => {
 
   try {
     const decipher = crypto.createDecipheriv(
-      "aes-128-gcm", // Using AES-128 in GCM mode
+      "aes-128-gcm",
       decryptedAesKey,
       initialVectorBuffer
     );
-    decipher.setAuthTag(encrypted_flow_data_tag); // Set the auth tag from the end of the encrypted data
+    decipher.setAuthTag(encrypted_flow_data_tag);
 
     const decryptedJSONString = Buffer.concat([
       decipher.update(encrypted_flow_data_body),
-      decipher.final(), // Finalize decryption - verifies the auth tag
+      decipher.final(),
     ]).toString("utf-8");
 
     const decryptedBody = JSON.parse(decryptedJSONString);
@@ -99,9 +89,10 @@ const decryptFlowRequest = (body, privatePem, passphrase) => {
     };
   } catch (error) {
     console.error("Failed to decrypt flow data or verify auth tag:", error);
+
     // This can happen if the data was tampered with or keys/IV are mismatched
     throw new FlowEndpointException(
-      400, // Bad Request or potentially 421 if it's suspected key issue
+      400,
       "Failed to decrypt flow data or verify integrity. Request might be invalid or keys mismatched."
     );
   }
@@ -123,7 +114,6 @@ const encryptFlowResponse = (response, aesKeyBuffer, initialVectorBuffer) => {
     flipped_iv.push(~pair[1]);
   }
 
-  // encrypt response data
   const cipher = crypto.createCipheriv(
     "aes-128-gcm",
     aesKeyBuffer,
@@ -159,7 +149,7 @@ const isRequestSignatureValid = (rawBody, signatureHeader, appSecret) => {
     console.warn(
       "APP_SECRET is not set. Skipping request signature validation. THIS IS INSECURE IN PRODUCTION."
     );
-    return true; // Bypass validation if secret is not set (only for development)
+    return true;
   }
   if (!signatureHeader) {
     console.error("Missing 'x-hub-signature-256' header.");
@@ -167,11 +157,11 @@ const isRequestSignatureValid = (rawBody, signatureHeader, appSecret) => {
   }
 
   const signature = signatureHeader.replace("sha256=", "");
-  const signatureBuffer = Buffer.from(signature, "hex"); // Signature is hex encoded
+  const signatureBuffer = Buffer.from(signature, "hex");
 
   const hmac = crypto.createHmac("sha256", appSecret);
   hmac.update(rawBody);
-  const digestBuffer = hmac.digest(); // Digest as buffer
+  const digestBuffer = hmac.digest();
 
   // Use timingSafeEqual to prevent timing attacks
   if (!crypto.timingSafeEqual(digestBuffer, signatureBuffer)) {
@@ -182,7 +172,6 @@ const isRequestSignatureValid = (rawBody, signatureHeader, appSecret) => {
   return true;
 };
 
-// Separated screen responses
 const SCREEN_RESPONSES = {
   // Screens with error messages
   ERROR_SCREENS: {
@@ -242,7 +231,7 @@ const SCREEN_RESPONSES = {
     },
   },
 
-  // Screens without error messages (normal screens)
+  // normal screens
   NORMAL_SCREENS: {
     PRIVACY_POLICY_SCREEN: {
       screen: "PRIVACY_POLICY_SCREEN",
@@ -301,12 +290,13 @@ const SCREEN_RESPONSES = {
       },
     },
   },
+
+  // Screens that are processed based on user input
   PROCESSED_SCREENS: {
     IDENTITY_VERIFICATION_SCREEN: function (nationalId) {
       if (!nationalId)
         return SCREEN_RESPONSES.ERROR_SCREENS.IDENTITY_VERIFICATION_SCREEN;
 
-      // Validate National ID
       const idIsValid = /^\d{8}$/.test(nationalId);
 
       if (!idIsValid)
@@ -447,11 +437,12 @@ const SCREEN_RESPONSES = {
   },
 };
 
-// Usage examples:
-// const hasError = SCREEN_RESPONSES.hasError('PIN_VERIFICATION_SCREEN'); // true
-// const allErrors = SCREEN_RESPONSES.getAllErrorMessages();
-// const specificScreen = SCREEN_RESPONSES.getScreen('CHECK_LOAN_STATUS_SCREEN');
-
+/**
+ * Handles the next screen logic based on the decrypted request body.
+ * @param {object} decryptedBody The decrypted request body.
+ * @returns {object} The next screen and data to be sent back to the client.
+ *
+ */
 async function getNextScreen(decryptedBody) {
   const { screen, data, version, action, flow_token } = decryptedBody;
 

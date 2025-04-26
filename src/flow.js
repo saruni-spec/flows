@@ -8,6 +8,7 @@ const {
   isRequestSignatureValid,
   getNextScreen,
 } = require("./lib");
+
 // Read private key from file
 const privateKeyEnv = process.env.PRIVATE_KEY;
 let PRIVATE_KEY;
@@ -29,7 +30,6 @@ if (privateKeyEnv.includes("-----BEGIN PRIVATE KEY-----")) {
 }
 const PASSPHRASE = process.env.PASSPHRASE;
 
-// Configure body parser to get raw body for signature verification
 const router = express.Router();
 router.use(
   bodyParser.json({
@@ -117,8 +117,6 @@ router.post("/", async (req, res) => {
   }
 });
 
-//
-// Handle GET requests for testing,return simple text
 router.get("/", (req, res) => {
   res.send("Flow endpoint is working!");
 });
