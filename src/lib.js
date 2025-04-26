@@ -172,6 +172,34 @@ const isRequestSignatureValid = (rawBody, signatureHeader, appSecret) => {
   return true;
 };
 
+/**
+ * Parse the private key from the environment variable.
+ *
+ */
+const getPrivateKey = (privateKeyEnv) => {
+  if (!privateKeyEnv) {
+    throw new Error("Private key not found in environment variables.");
+  }
+
+  let PRIVATE_KEY;
+  // Handle different possible formats
+  if (privateKeyEnv.includes("-----BEGIN PRIVATE KEY-----")) {
+    // If headers are already present, just ensure newlines are correct
+    PRIVATE_KEY = privateKeyEnv.replace(/\\n/g, "\n");
+  } else {
+    // If headers are missing or format is incorrect, format it properly
+    const keyContent = privateKeyEnv.replace(/[\r\n\s]/g, "");
+
+    // Build properly formatted key
+    PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\n";
+    for (let i = 0; i < keyContent.length; i += 64) {
+      PRIVATE_KEY += keyContent.slice(i, i + 64) + "\n";
+    }
+    PRIVATE_KEY += "-----END PRIVATE KEY-----\n";
+  }
+  return PRIVATE_KEY;
+};
+
 const SCREEN_RESPONSES = {
   // Screens with error messages
   ERROR_SCREENS: {
@@ -566,4 +594,5 @@ module.exports = {
   FlowEndpointException,
   isRequestSignatureValid,
   getNextScreen,
+  getPrivateKey,
 };
